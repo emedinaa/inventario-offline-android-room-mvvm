@@ -6,8 +6,11 @@ import com.example.inventariooffline.data.model.Product
 import com.example.inventariooffline.repository.ProductRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ProductViewModel (private val repo: ProductRepository) : ViewModel() {
+
+    val products = repo.fetchProducts().asLiveData()
 
     //######################### LiveData para obtener todos los products ###############
     fun getAllProducts() = liveData(Dispatchers.IO) {
@@ -51,7 +54,9 @@ class ProductViewModel (private val repo: ProductRepository) : ViewModel() {
     //################################### deleteAllProducts  ###########################
 
     fun deleteAllProducts() = viewModelScope.launch {
-        repo.deleteAllProducts()
+        withContext(Dispatchers.IO) {
+            repo.deleteAllProducts()
+        }
     }
     //###############################################################################################
 

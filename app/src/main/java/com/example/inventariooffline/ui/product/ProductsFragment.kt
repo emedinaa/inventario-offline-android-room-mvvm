@@ -1,10 +1,12 @@
 package com.example.inventariooffline.ui.product
 
 import android.os.Bundle
-import android.util.Log
-import android.view.*
-import androidx.fragment.app.Fragment
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -17,62 +19,79 @@ import com.example.inventariooffline.databinding.FragmentProductsBinding
 import com.example.inventariooffline.presentation.ProductViewModel
 import com.example.inventariooffline.presentation.ProductViewModelFactory
 import com.example.inventariooffline.repository.ProductRepositoryImpl
-import com.example.primerappmvvmretrofitkotlin.ui.main.adapters.ProductsAdapter
-import com.example.primerappmvvmretrofitkotlin.ui.main.adapters.ProductsAdapterV2
+import com.example.inventariooffline.ui.product.adapters.ProductsAdapterV2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 
-class ProductsFragment : Fragment(R.layout.fragment_products), ProductsAdapterV2.OnProductClickListener {
-    private lateinit var binding : FragmentProductsBinding
+class ProductsFragment : Fragment(R.layout.fragment_products),
+    ProductsAdapterV2.OnProductClickListener {
+    private lateinit var binding: FragmentProductsBinding
+
     //Instanciar viewModel
-    private val viewModel by viewModels<ProductViewModel> { ProductViewModelFactory(
-        ProductRepositoryImpl(
-        LocalProductDatasource(AppDatabase.getDatabase(requireContext()).productDao())
+    private val viewModel by viewModels<ProductViewModel> {
+        ProductViewModelFactory(
+            ProductRepositoryImpl(
+                LocalProductDatasource(AppDatabase.getDatabase(requireContext()).productDao())
+            )
         )
-    ) }
+    }
 
     private lateinit var productsRecyclerViewAdapterV2: ProductsAdapterV2
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //instanciar adapater del recyclerview
-        productsRecyclerViewAdapterV2 = ProductsAdapterV2(requireContext(), this)
+        productsRecyclerViewAdapterV2 = ProductsAdapterV2(this)
 
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentProductsBinding.bind(view)
+        setObservers()
         //habilitar menu
         setHasOptionsMenu(true)
         binding.rvProducts.layoutManager = LinearLayoutManager(requireContext())
         binding.rvProducts.adapter = productsRecyclerViewAdapterV2
-
-        binding.btnAddProduct.setOnClickListener{
+        hideViewLoading()
+        binding.btnAddProduct.setOnClickListener {
             findNavController().navigate(R.id.action_productsFragment_to_registerProductFragment)
         }
 
-        fetchAllProducts()
+        //fetchAllProducts()
     }
 
-    fun fetchAllProducts(){
+    private fun hideViewLoading() {
+        binding.shimmerFrameLayout.stopShimmerAnimation()
+        binding.shimmerFrameLayout.visibility = View.GONE
+    }
 
-        viewModel.getAllProducts().observe(viewLifecycleOwner,{
-            when(it){
-                is Resource.Loading ->{
+    private fun setObservers() {
+        viewModel.products.observe(viewLifecycleOwner) {
+            productsRecyclerViewAdapterV2.setProductList(it)
+        }
+    }
+
+    fun fetchAllProducts() {
+
+        viewModel.getAllProducts().observe(viewLifecycleOwner) {
+            when (it) {
+                is Resource.Loading -> {
                     binding.shimmerFrameLayout.startShimmerAnimation()
                     binding.shimmerFrameLayout.visibility = View.VISIBLE
                 }
-                is Resource.Success ->{
+                is Resource.Success -> {
 
                     binding.shimmerFrameLayout.stopShimmerAnimation()
                     binding.shimmerFrameLayout.visibility = View.GONE
                     //Setear data al recyclerview
-                   // binding.rvProducts.adapter = ProductsAdapter(it.data, this@ProductsFragment) //Forma normal ProductsAdapater
+                    // binding.rvProducts.adapter = ProductsAdapter(it.data, this@ProductsFragment) //Forma normal ProductsAdapater
                     productsRecyclerViewAdapterV2.setProductList(it.data)
                 }
+                else -> {
+                }
             }
-        })
+        }
 
     }
 
@@ -84,7 +103,11 @@ class ProductsFragment : Fragment(R.layout.fragment_products), ProductsAdapterV2
     }
 
     override fun onProductLongClick(product: Product, position: Int) {
-        Toast.makeText(requireContext(), "Agregar a favoritos.. En construcción", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            requireContext(),
+            "Agregar a favoritos.. En construcción",
+            Toast.LENGTH_SHORT
+        ).show()
 
     }
 
@@ -107,7 +130,7 @@ class ProductsFragment : Fragment(R.layout.fragment_products), ProductsAdapterV2
         val id = item!!.itemId
         //handle item clicks
 
-        if(id == R.id.menu_eliminar){
+        if (id == R.id.menu_eliminar) {
             deleteAllProduct()
         }
 
@@ -115,20 +138,24 @@ class ProductsFragment : Fragment(R.layout.fragment_products), ProductsAdapterV2
         return super.onOptionsItemSelected(item)
     }
 
-    private fun deleteAllProduct(){
-        //AlertDialog: https://www.youtube.com/watch?v=ptBW9tP2cHA
+    private fun deleteAllProduct() {
+        //AlertDialog: https://www.youtube.com/watch?v=ptBW9tP2cHA ???
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Eliminar Productos - Confirmación")
             .setMessage("Esta seguro de eliminar todos los productos de la base de datos?")
-            .setNegativeButton("No"){dialog, which ->
+            .setNegativeButton("No") { _, _ ->
                 //nothing to do..
             }
-            .setPositiveButton("Si"){dialog, which ->
+            .setPositiveButton("Si") { _, _ ->
                 viewModel.deleteAllProducts()
                 //Se llama a setup observers para refrescar la llamada a la base de datos. Si no se hace el recyclerview no se actualiza.
-                fetchAllProducts()
+                //fetchAllProducts()
 
-                Toast.makeText(requireContext(), "Productos eliminados correctamente", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Productos eliminados correctamente",
+                    Toast.LENGTH_SHORT
+                ).show()
 
             }
             .show()

@@ -1,6 +1,5 @@
-package com.example.primerappmvvmretrofitkotlin.ui.main.adapters
+package com.example.inventariooffline.ui.product.adapters
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -13,7 +12,6 @@ import com.example.inventariooffline.databinding.ProductsListBinding
 
 
 class ProductsAdapterV2(
-    private val context: Context,
     private val itemClickListener: OnProductClickListener
 ) : RecyclerView.Adapter<BaseViewHolder<*>>() {
 
@@ -34,7 +32,7 @@ class ProductsAdapterV2(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseViewHolder<*> {
         val itemBinding = ProductsListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        val holder = MainViewHolder (itemBinding, parent.context)
+        val holder = MainViewHolder (itemBinding)
 
         holder.itemView.setOnClickListener {
             val position = holder.adapterPosition.takeIf { it != DiffUtil.DiffResult.NO_POSITION }
@@ -62,14 +60,14 @@ class ProductsAdapterV2(
 
     override fun getItemCount(): Int = productsList.size
 
-    private inner class MainViewHolder (val binding: ProductsListBinding, val context: Context) : BaseViewHolder<Product>(binding.root) {
+    private inner class MainViewHolder (val binding: ProductsListBinding) : BaseViewHolder<Product>(binding.root) {
         override fun bind(item: Product) {
             binding.txtName.text="${item.name}"
             binding.txtDescription.text="${item.description}"
             binding.txtBarcode.text="${item.barcode}"
             binding.txtQty.text = "Cantidad: ${item.qty}"
             binding.txtPrice.text = "S/${item.price}"
-            Glide.with(context).load("${item.image_path}").centerCrop().into(binding.productImage)
+            Glide.with(binding.productImage.context).load("${item.image_path}").centerCrop().into(binding.productImage)
 
         }
     }
